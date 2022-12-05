@@ -2,25 +2,29 @@ const express = require('express');
 const movieHelpers = require('./movieHelpers');
 const cors = require('cors');
 const app = express();
+require('dotenv').config({ path: './local.env' })
+const { MongoClient } = require('mongodb');
 const PORT = process.env.PORT || 8080;
-app.use(express.json());
 
 let allMovieData;
-const fs=require("fs");
-fs.readFile("./mockMovieData.json", "utf8", (err, jsonString) => {
-    if (err) throw err
 
-    else allMovieData = JSON.parse(jsonString);
-});
+let uri = process.env.DATABASE_URL;
+let mongoClient = new MongoClient(uri);
+connectToDB().catch(console.error);
+
+app.use(express.json());
 
 app.use(cors({
     origin: '*'
 }));
 
+app.listen(
+    PORT, 
+    () => console.log(`server running at http://localhost:${PORT}`)
+)
 
 app.get('/allMovies', (req, res) => {
-    let alphabetizedMovies = allMovieData.sort((a, b) => (a.movieName > b.movieName) ? 1 : -1);
-    res.send(alphabetizedMovies);    
+    res.send(allMovieData);    
 })
 
 app.post('/recommendation', (req, res) => {
@@ -75,7 +79,35 @@ function handleClientError(res, messageString) {
     })
 }
 
-app.listen(
-    PORT, 
-    () => console.log(`server running at http://localhost:${PORT}`)
-)
+async function connectToDB() {
+    try {
+        let database = mongoClient.db(process.env.DATABASE_NAME);
+        let movies = database.collection(process.env.COLLECTION_NAME);
+    
+        // sort alphabetically by the movieName; only include movieName, movieYear, keywords
+        const options = {
+            sort: { movieName: 1 },
+            projection: { _id: 0, movieName: 1, movieYear: 1, keywords: 1 },
+          };
+    
+        const cursor = movies.find({}, options);
+    
+        if ((await cursor.count()) === 0) {
+          console.log("No movie data found!");
+        } else {
+            allMovieData = await cursor.toArray();
+        }   
+    } finally {
+        await mongoClient.close();
+    }
+}
+
+// for debugging
+async function listDatabases(client) {
+   const databasesList = await client.db().admin().listDatabases();
+   console.log('databasesList');
+   databasesList.databases.forEach(db => {
+       console.log(db);
+   });
+
+}
