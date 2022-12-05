@@ -1,6 +1,7 @@
 const express = require('express');
+const movieHelpers = require('./movieHelpers');
 const app = express();
-const PORT = 8080;
+const PORT = process.env.PORT || 8080;
 app.use(express.json());
 
 let allMovieData;
@@ -27,61 +28,50 @@ app.post('/recommendation', (req, res) => {
     let allMovieDataLocal = allMovieData;
 
     if (!movieOneInput) {
-        res.status(418).send({
-            message: "movieOneInput is required"
-        })
+        handleClientError(res, "movieOneInput is required");
     }
-    const movieOne = allMovieDataLocal.find(movie => movie.movieName.toLowerCase() === movieOneInput.toLowerCase()); 
+    const movieOne = movieHelpers.findMovie(allMovieData, movieOneInput);
     if (movieOne) {
         relevantKeywords.push(...movieOne.keywords);
         allMovieDataLocal = allMovieDataLocal.filter(movie => movie.movieName !== movieOne.movieName);
     } else {
-        res.status(418).send({
-            message: "movieOneInput is invalid"
-        }) 
+        handleClientError(res, "movieOneInput is invalid");
     }
 
     if (movieTwoInput) {
-        const movieTwo = allMovieDataLocal.find(movie => movie.movieName.toLowerCase() === movieTwoInput.toLowerCase()); 
+        const movieTwo = movieHelpers.findMovie(allMovieData, movieTwoInput);
         if (movieTwo) {
           relevantKeywords.push(...movieTwo.keywords);
           allMovieDataLocal = allMovieDataLocal.filter(movie => movie.movieName !== movieTwo.movieName);      
         } else {
-            res.status(418).send({
-                message: "movieTwoInput is invalid"
-            }) 
+            handleClientError(res, "movieTwoInput is invalid");
         }
-      }
-      if (movieThreeInput) {
-        const movieThree = allMovieDataLocal.find(movie => movie.movieName.toLowerCase() === movieThreeInput.toLowerCase()); 
+    }
+    if (movieThreeInput) {
+        const movieThree = movieHelpers.findMovie(allMovieData, movieThreeInput);
         if (movieThree) {
           relevantKeywords.push(...movieThree.keywords);
           allMovieDataLocal = allMovieDataLocal.filter(movie => movie.movieName !== movieThree.movieName);      
         } else {
-            res.status(418).send({
-                message: "movieThreeInput is invalid"
-            }) 
+            handleClientError(res, "movieThreeInput is invalid");
         }
-      }
+    }
 
 
     relevantKeywords = [...new Set(relevantKeywords)];
-    const movieScores = {};
-
-    allMovieDataLocal.forEach((movieObj) => {
-        const sharedKeywords = movieObj.keywords.filter(kw => relevantKeywords.includes(kw)); 
-        const score = sharedKeywords.length;
-        movieScores[movieObj.movieName] = score; 
-      });  
-
-      const recommendation = Object.keys(movieScores).reduce((a, b) => movieScores[a] > movieScores[b] ? a : b);
-      const recommendationObj = allMovieDataLocal.find(movie => movie.movieName.toLowerCase() === recommendation.toLowerCase()); 
-      recommendationObj.hasData = true;
+    movieScores = movieHelpers.getMovieScores(allMovieDataLocal, relevantKeywords);
+    recommendationObj = movieHelpers.getMovieRecommendation(allMovieDataLocal, movieScores);
 
     res.send({
         recommendationObj
     });
 })
+
+function handleClientError(res, messageString) {
+    res.status(418).send({
+        message: messageString 
+    })
+}
 
 app.listen(
     PORT, 
