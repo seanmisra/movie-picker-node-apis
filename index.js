@@ -1,5 +1,6 @@
 const express = require('express');
 const movieHelpers = require('./movieHelpers');
+const cors = require('cors');
 const app = express();
 const PORT = process.env.PORT || 8080;
 app.use(express.json());
@@ -12,11 +13,14 @@ fs.readFile("./mockMovieData.json", "utf8", (err, jsonString) => {
     else allMovieData = JSON.parse(jsonString);
 });
 
+app.use(cors({
+    origin: '*'
+}));
+
 
 app.get('/allMovies', (req, res) => {
-    res.send({
-        allMovieData
-    });    
+    let alphabetizedMovies = allMovieData.sort((a, b) => (a.movieName > b.movieName) ? 1 : -1);
+    res.send(alphabetizedMovies);    
 })
 
 app.post('/recommendation', (req, res) => {
@@ -62,9 +66,7 @@ app.post('/recommendation', (req, res) => {
     movieScores = movieHelpers.getMovieScores(allMovieDataLocal, relevantKeywords);
     recommendationObj = movieHelpers.getMovieRecommendation(allMovieDataLocal, movieScores);
 
-    res.send({
-        recommendationObj
-    });
+    res.send(recommendationObj);
 })
 
 function handleClientError(res, messageString) {
