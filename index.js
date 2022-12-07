@@ -44,6 +44,7 @@ app.post('/recommendation', (req, res) => {
         allMovieDataLocal = allMovieDataLocal.filter(movie => movie.movieName !== movieOne.movieName);
     } else {
         handleClientError(res, "movieOneInput is invalid");
+        return;
     }
 
     if (movieTwoInput) {
@@ -53,6 +54,7 @@ app.post('/recommendation', (req, res) => {
           allMovieDataLocal = allMovieDataLocal.filter(movie => movie.movieName !== movieTwo.movieName);      
         } else {
             handleClientError(res, "movieTwoInput is invalid");
+            return;
         }
     }
     if (movieThreeInput) {
@@ -62,6 +64,7 @@ app.post('/recommendation', (req, res) => {
           allMovieDataLocal = allMovieDataLocal.filter(movie => movie.movieName !== movieThree.movieName);      
         } else {
             handleClientError(res, "movieThreeInput is invalid");
+            return;
         }
     }
 
@@ -74,7 +77,7 @@ app.post('/recommendation', (req, res) => {
 })
 
 function handleClientError(res, messageString) {
-    res.status(418).send({
+    res.status(400).send({
         message: messageString 
     })
 }
@@ -105,7 +108,6 @@ async function connectToDB() {
 // for debugging
 async function listDatabases(client) {
    const databasesList = await client.db().admin().listDatabases();
-   console.log('databasesList');
    databasesList.databases.forEach(db => {
        console.log(db);
    });
