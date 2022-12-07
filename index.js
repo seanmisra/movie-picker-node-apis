@@ -23,11 +23,11 @@ app.listen(
     () => console.log(`server running at http://localhost:${PORT}`)
 )
 
-app.get('/allMovies', (req, res) => {
+app.get('/api/allMovies', (req, res) => {
     res.send(allMovieData);    
 })
 
-app.post('/recommendation', (req, res) => {
+app.post('/api/recommendation', (req, res) => {
     const { movieOneInput } = req.body;
     const { movieTwoInput } = req.body;
     const { movieThreeInput } = req.body;
